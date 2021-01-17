@@ -7,57 +7,39 @@ from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath: str, categories_filepath: str) -> pd.DataFrame:
-    # load dataset
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
 
-    # merge datasets
     df = pd.merge(messages, categories, on="id")
 
-    # create a dataframe of the 36 individual category columns
     categories = categories["categories"].str.split(";", expand=True)
 
-    # select the first row of the categories dataframe
-    row = categories.iloc[0].apply(lambda text: text[:-2])
-
-    # use this row to extract a list of new column names for categories.
-    # one way is to apply a lambda function that takes everything
-    # up to the second to last character of each string with slicing
     category_colnames = categories.iloc[0].apply(lambda text: text[:-2])
-
-    # rename the columns of `categories`
     categories.columns = category_colnames
 
     for column in categories:
-        # set each value to be the last character of the string
         categories[column] = categories[column].apply(lambda text: text.split("-")[-1])
-
-        # convert column from string to numeric
         categories[column] = categories[column].astype(int)
 
     df.drop("categories", axis=1, inplace=True)
 
-    # concatenate the original dataframe with the new `categories` dataframe
     df = pd.concat([df, categories], axis="columns")
 
-    # check number of duplicates
-    duplicates_pre = df.duplicated().sum()
-    # drop duplicates
     filt = df.duplicated()
     df = df[~filt]
-    # check number of duplicates
-    duplicates_post = df.duplicated().sum()
+    assert (
+        df.duplicated().sum() == 0
+    ), "There are still duplicate rows in your DataFrame"
+    return df
 
-    engine = create_engine("sqlite:///messages.db")
+
+def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    return df
+
+
+def save_data(df: pd.DataFrame, database_filename: str):
+    engine = create_engine("sqlite:///{}.db".format(database_filename))
     df.to_sql("messages", engine, index=False)
-
-
-def clean_data(df):
-    pass
-
-
-def save_data(df, database_filename):
-    pass
 
 
 def main():

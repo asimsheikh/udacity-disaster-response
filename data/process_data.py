@@ -21,7 +21,7 @@ def load_data(messages_filepath: str, categories_filepath: str) -> pd.DataFrame:
         categories[column] = categories[column].apply(lambda text: text.split("-")[-1])
         categories[column] = categories[column].astype(int)
 
-    df.drop("categories", axis=1, inplace=True)
+    df.drop("categories", axis="columns", inplace=True)
 
     df = pd.concat([df, categories], axis="columns")
 
@@ -38,7 +38,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def save_data(df: pd.DataFrame, database_filename: str):
-    engine = create_engine("sqlite:///{}.db".format(database_filename))
+    engine = create_engine("sqlite:///{}".format(database_filename))
     df.to_sql("messages", engine, index=False)
 
 
